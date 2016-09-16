@@ -23,7 +23,8 @@
 #lang racket
 
 (require racket-list-utils/utils)
-(provide (struct-out node) nodeof)
+(require racket/contract/parametric)
+(provide (struct-out node))
 
 (struct node (label children)
   #:methods
@@ -39,24 +40,15 @@
      (+ (hash2-recur (node-label a))
         (hash2-recur (node-children a))))])
 
-(define (nodeof type-predicate)
-  (λ (elem) (and (node? elem)
-                 (type-predicate (node-label elem))
-                 ((listof (nodeof type-predicate)) (node-children elem)))))
-
 (define (subtree-filter tree predicate)
   (define children (node-children tree))
   (if (predicate tree)
       (cons tree (append* (map (λ (c) subtree-filter c predicate) children)))
       (append* (map (λ (c) subtree-filter c predicate) children))))
-; TODO provide, with a contract
-
-
-; TODO provide, with a contract
 
 (define (replace-first-subtree top replacee replacement)
   (car ((λ (t r1 r2) (replace-some-subtree-aux map-accumulatel t r1 r2)) top replacee replacement)))
-(provide replace-first-subtree)
+(provide (contract-out [replace-first-subtree (parametric->/c [T] (-> node? node? node? node?))]))
 
 (define (replace-last-subtree top replacee replacement)
   (car ((λ (t r1 r2) (replace-some-subtree-aux map-accumulater t r1 r2)) top replacee replacement)))
