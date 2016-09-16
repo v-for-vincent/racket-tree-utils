@@ -29,7 +29,7 @@
        [new-leaf2 (node 7 '())]
        [new-subtree1 (node 5 (list new-leaf1 new-leaf2))]
        [new-top1 (node 1 (list new-subtree1 subtree2))])
-  (check-equal? new-top1 (replace-first-subtree top1 subtree1 new-subtree1)))
+  (check-equal? (replace-first-subtree top1 subtree1 new-subtree1) new-top1))
 
 (let* ([leaf1 (node 3 '())]
        [leaf2 (node 4 '())]
@@ -40,4 +40,4 @@
        [new-leaf4 (node 7 '())]
        [new-subtree2 (node 5 (list new-leaf3 new-leaf4))]
        [new-top1 (node 1 (list subtree1 new-subtree2))])
-  (check-equal? new-top1 (replace-last-subtree top1 subtree1 new-subtree2)))
+  (check-equal? (replace-last-subtree top1 subtree1 new-subtree2) new-top1))
