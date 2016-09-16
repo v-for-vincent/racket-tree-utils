@@ -48,8 +48,8 @@
   (match tree
     [(node label children)
      (if (predicate tree)
-      (cons tree (append* (map (λ (c) subtree-filter c predicate) children)))
-      (append* (map (λ (c) subtree-filter c predicate) children)))]))
+         (cons tree (append* (map (λ (c) subtree-filter c predicate) children)))
+         (append* (map (λ (c) subtree-filter c predicate) children)))]))
 ; TODO provide, with a contract
 
 
@@ -57,19 +57,22 @@
 (define (replace-first-subtree top replacee replacement)
   (second (replace-first-subtree-aux top replacee replacement)))
 
-; result is a pair: whether replacement took place, plus the tree after replacement
+; result is a pair: the tree after replacement, plus whether replacement actually took place
 (define (replace-first-subtree-aux top replacee replacement)
   (if (equal? top replacee)
       (cons #t replacement)
       (match top
-       [(node label children)
-        ; accumulator is whether-substitution-has-taken-place-yet
-        (mapAccum (λ (c acc)
-        ; dit gaat zo niet werken: alles behalve #f telt als #t, dus recursieve call zal altijd tellen als #t
-        ;(mapAccum (λ (c acc) (if acc (cons c acc) (replace-first-subtree-aux c replacee replacement))) #f children)
+        [(node label children)
+         ; accumulator is whether-substitution-has-taken-place-yet
+         (map-accumulatel (λ (c acc)
+                            (if acc
+                                (cons c acc)
+                                (replace-first-subtree-aux c replacee replacement)))
+                          #f
+                          children)])))
 
 ; TODO provide, with a contract
-;
+
 
 
 
@@ -86,7 +89,7 @@
 ;replaceLastSubtree top sub1 sub2 = snd $ replaceLastSubtree' top sub1 sub2
 ;
 
-      
+
 ;-- | Replace the last instance of a subtree with a different subtree.
 ;replaceLastSubtree' :: (Eq a)
 ;                    => Tree a -- ^ the top-level tree
