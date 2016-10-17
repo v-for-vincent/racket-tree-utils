@@ -24,9 +24,10 @@
 
 (require racket-list-utils/utils)
 (require racket/contract/parametric)
+(require racket/serialize)
 (provide (struct-out node))
 
-(struct node (label children)
+(serializable-struct node (label children)
   #:methods
   gen:equal+hash
   [(define (equal-proc a b equal?-recur)
