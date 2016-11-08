@@ -20,12 +20,15 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-#lang racket
+#lang at-exp racket
 
 (require racket-list-utils/utils)
 (require racket/contract/parametric)
 (require racket/serialize)
 (provide (struct-out node))
+
+(require scribble/srcdoc)
+(require (for-doc scribble/manual))
 
 (serializable-struct node (label children)
   #:methods
@@ -69,3 +72,25 @@
         (cons (node (node-label top) mapping) replaced?))))
 
 ; TODO provide, with a contract
+
+(define (horizontal-level tree depth)
+  (define (level-aux tree depth acc)
+    (match tree
+      [(node l ch)
+       (if
+        (equal? depth acc)
+        (list l)
+        (if
+         (null? ch)
+         (list)
+         (apply append (map (λ (c) (level-aux c depth (+ acc 1))) ch))))]))
+  (level-aux tree depth 0))
+(provide
+ (proc-doc/names
+  horizontal-level
+  (-> node? exact-nonnegative-integer? list?)
+  (tree depth)
+  @{Extracts all nodes at depth @racket[depth] from @racket[tree]
+ and returns them in left-to-right order.
+ If @racket[tree] does not have any nodes at depth @racket[depth],
+ the result is an empty list.}))
