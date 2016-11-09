@@ -116,3 +116,35 @@
       (1))))
    2)
   '(3 1)))
+
+(test-case
+ "determining the depth of a tree"
+ (check-equal?
+  (node-depth
+   (tree-bp
+    (1)))
+  0)
+ (check-equal?
+  (node-depth
+   (tree-bp
+    (1
+     (2))))
+  1)
+ (check-equal?
+  (node-depth
+   (tree-bp
+    (1
+     (2
+      (3)
+      (4))
+     (5))))
+  2)
+ (check-equal?
+  (node-depth
+   (tree-bp
+    (1
+     (2)
+     (3
+      (4)
+      (5)))))
+  2))

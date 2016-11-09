@@ -94,3 +94,14 @@
  and returns them in left-to-right order.
  If @racket[tree] does not have any nodes at depth @racket[depth],
  the result is an empty list.}))
+
+(define (node-depth n)
+  (match n
+    [(node l (list)) 0]
+    [(node l ch) (+ 1 (apply max (map node-depth ch)))]))
+(provide
+ (proc-doc/names
+  node-depth
+  (-> node? exact-nonnegative-integer?)
+  (n)
+  @{Computes the (maximum) depth of @racket[n], where 0 is the depth of a childless node.}))
