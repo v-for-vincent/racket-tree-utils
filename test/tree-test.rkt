@@ -118,6 +118,43 @@
   '(3 1)))
 
 (test-case
+ "subtrees at a given level"
+ (check-equal?
+  (horizontal-level
+   (tree-bp
+    (8
+     (7)
+     (5)))
+   0
+   #t)
+  (list
+   (tree-bp
+    (8
+     (7)
+     (5)))))
+ (check-equal?
+  (horizontal-level
+   (tree-bp
+    (8
+     (7
+      (3)
+      (2))
+     (5
+      (9)
+      (1))))
+   1
+   #t)
+  (list
+   (tree-bp
+    (7
+     (3)
+     (2)))
+   (tree-bp
+    (5
+     (9)
+     (1))))))
+
+(test-case
  "determining the depth of a tree"
  (check-equal?
   (node-depth

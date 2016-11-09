@@ -31,18 +31,18 @@
 (require (for-doc scribble/manual))
 
 (serializable-struct node (label children)
-  #:methods
-  gen:equal+hash
-  [(define (equal-proc a b equal?-recur)
-     (and (equal?-recur (node-label a) (node-label b))
-          (equal?-recur (node-children a) (node-children b))))
-   ; same hash function as in Racket docs, not too concerned about optimum here
-   (define (hash-proc a hash-recur)
-     (+ (hash-recur (node-label a))
-        (* 3 (hash-recur (node-children a)))))
-   (define (hash2-proc a hash2-recur)
-     (+ (hash2-recur (node-label a))
-        (hash2-recur (node-children a))))])
+                     #:methods
+                     gen:equal+hash
+                     [(define (equal-proc a b equal?-recur)
+                        (and (equal?-recur (node-label a) (node-label b))
+                             (equal?-recur (node-children a) (node-children b))))
+                      ; same hash function as in Racket docs, not too concerned about optimum here
+                      (define (hash-proc a hash-recur)
+                        (+ (hash-recur (node-label a))
+                           (* 3 (hash-recur (node-children a)))))
+                      (define (hash2-proc a hash2-recur)
+                        (+ (hash2-recur (node-label a))
+                           (hash2-recur (node-children a))))])
 
 (define (subtree-filter tree predicate)
   (define children (node-children tree))
@@ -73,13 +73,13 @@
 
 ; TODO provide, with a contract
 
-(define (horizontal-level tree depth)
+(define (horizontal-level tree depth [with-subtrees #f])
   (define (level-aux tree depth acc)
     (match tree
       [(node l ch)
        (if
         (equal? depth acc)
-        (list l)
+        (list (if with-subtrees tree l))
         (if
          (null? ch)
          (list)
@@ -88,12 +88,14 @@
 (provide
  (proc-doc/names
   horizontal-level
-  (-> node? exact-nonnegative-integer? list?)
-  (tree depth)
+  (->* (node? exact-nonnegative-integer?) (boolean?) list?)
+  ((tree depth) ((with-subtrees #f)))
   @{Extracts all nodes at depth @racket[depth] from @racket[tree]
  and returns them in left-to-right order.
  If @racket[tree] does not have any nodes at depth @racket[depth],
- the result is an empty list.}))
+ the result is an empty list.
+ If @racket[with-subtrees] is @racket[#t], the result is a list of nodes
+ with their children, rather than just labels.}))
 
 (define (node-depth n)
   (match n
