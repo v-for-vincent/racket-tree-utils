@@ -107,3 +107,22 @@
   (-> node? exact-nonnegative-integer?)
   (n)
   @{Computes the (maximum) depth of @racket[n], where 0 is the depth of a childless node.}))
+
+(define (node-map proc n)
+  (node (proc (node-label n))
+        (map (curry node-map proc) (node-children n))))
+(provide
+ (proc-doc/names
+  node-map
+  (-> (-> any/c any/c) node? node?)
+  (proc n)
+  @{Recursively maps the procedure @racket[proc] over @racket[n].}))
+
+(define (node-max n)
+  (max (node-label n) (apply max (map node-max (node-children n)))))
+(provide
+ (proc-doc/names
+  node-max
+  (-> node? real?)
+  (n)
+  @{Finds the maximum value in a tree of @racket[real?] values.}))
