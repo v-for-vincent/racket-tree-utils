@@ -25,24 +25,34 @@
 (require racket-list-utils/utils)
 (require racket/contract/parametric)
 (require racket/serialize)
+(require racket/struct) ; for constructor style printer
 (provide (struct-out node))
 
 (require scribble/srcdoc)
 (require (for-doc scribble/manual))
 
-(serializable-struct node (label children)
-                     #:methods
-                     gen:equal+hash
-                     [(define (equal-proc a b equal?-recur)
-                        (and (equal?-recur (node-label a) (node-label b))
-                             (equal?-recur (node-children a) (node-children b))))
-                      ; same hash function as in Racket docs, not too concerned about optimum here
-                      (define (hash-proc a hash-recur)
-                        (+ (hash-recur (node-label a))
-                           (* 3 (hash-recur (node-children a)))))
-                      (define (hash2-proc a hash2-recur)
-                        (+ (hash2-recur (node-label a))
-                           (hash2-recur (node-children a))))])
+(serializable-struct
+ node (label children)
+ #:transparent
+ #:methods
+ gen:equal+hash
+ [(define (equal-proc a b equal?-recur)
+    (and (equal?-recur (node-label a) (node-label b))
+         (equal?-recur (node-children a) (node-children b))))
+  ; same hash function as in Racket docs, not too concerned about optimum here
+  (define (hash-proc a hash-recur)
+    (+ (hash-recur (node-label a))
+       (* 3 (hash-recur (node-children a)))))
+  (define (hash2-proc a hash2-recur)
+    (+ (hash2-recur (node-label a))
+       (hash2-recur (node-children a))))]
+ #:methods
+ gen:custom-write
+ [(define
+    write-proc
+    (make-constructor-style-printer
+     (λ (obj) 'node)
+     (λ (obj) (list (node-label obj) (node-children obj)))))])
 
 (define (subtree-filter tree predicate)
   (define children (node-children tree))
