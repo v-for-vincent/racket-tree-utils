@@ -59,6 +59,7 @@
   (if (predicate tree)
       (cons tree (append* (map (λ (c) subtree-filter c predicate) children)))
       (append* (map (λ (c) subtree-filter c predicate) children))))
+(provide subtree-filter)
 
 (define (replace-first-subtree top replacee replacement)
   (car ((λ (t r1 r2) (replace-some-subtree-aux map-accumulatel t r1 r2)) top replacee replacement)))
@@ -118,15 +119,15 @@
   (n)
   @{Computes the (maximum) depth of @racket[n], where 0 is the depth of a childless node.}))
 
-(define (node-map proc n)
+(define (node-map/df proc n)
   (node (proc (node-label n))
-        (map (curry node-map proc) (node-children n))))
+        (map (curry node-map/df proc) (node-children n))))
 (provide
  (proc-doc/names
-  node-map
+  node-map/df
   (-> (-> any/c any/c) node? node?)
   (proc n)
-  @{Recursively maps the procedure @racket[proc] over @racket[n].}))
+  @{Recursively maps the procedure @racket[proc] over @racket[n] in a depth-first manner.}))
 
 (define (node-max n)
   (max (node-label n) (apply max (map node-max (node-children n)))))
