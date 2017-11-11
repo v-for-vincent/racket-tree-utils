@@ -58,7 +58,7 @@
   (define children (node-children tree))
   (if (predicate tree)
       (cons tree (append-map (λ (c) subtree-filter c predicate) children))
-      (append-map (λ (c) subtree-filter c predicate) children)))
+      (append-map (λ (c) (subtree-filter c predicate)) children)))
 (provide
  (proc-doc/names
   subtree-filter
