@@ -59,7 +59,12 @@
   (if (predicate tree)
       (cons tree (append-map (λ (c) subtree-filter c predicate) children))
       (append-map (λ (c) subtree-filter c predicate) children)))
-(provide subtree-filter)
+(provide
+ (proc-doc/names
+  subtree-filter
+  (-> node? procedure? (listof node?))
+  (tree proc)
+  @{Filters out all the subtrees of @racket[tree] to which @racket[proc] applies.}))
 
 (define (replace-first-subtree top replacee replacement)
   (car ((λ (t r1 r2) (replace-some-subtree-aux map-accumulatel t r1 r2)) top replacee replacement)))
