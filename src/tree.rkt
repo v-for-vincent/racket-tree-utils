@@ -26,6 +26,7 @@
 (require racket/contract/parametric)
 (require racket/serialize)
 (require racket/struct) ; for constructor style printer
+(require racket/generator)
 (provide (struct-out node))
 
 (require scribble/srcdoc)
@@ -192,3 +193,16 @@
   (-> node? exact-positive-integer?)
   (n)
   @{Computes the total number of nodes in @racket[n].}))
+
+(define (reyield g)
+  (for ([v (in-producer g 'done)])
+    (yield v)))
+
+(define (subtrees n)
+  (generator
+   ()
+   (yield n)
+   (for ([ch (node-children n)])
+     (reyield (subtrees ch)))
+   (yield 'done)))
+(provide subtrees)
