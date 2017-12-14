@@ -24,7 +24,7 @@
 ; This is because a Void return type allows things like underlined terminal output.
 
 #lang at-exp racket
-(require unstable-positional-tree-utils
+(require positional-tree-utils
          scribble/srcdoc
          (for-doc scribble/manual))
 

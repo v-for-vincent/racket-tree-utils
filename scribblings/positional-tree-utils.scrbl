@@ -1,9 +1,9 @@
 #lang scribble/manual
 @(require
    scribble/extract)
-@title{Unstable positional tree utilities}
+@title{Positional tree utilities}
 This is a simple collection of tree-processing functions which I have found helpful in general.
 @author{Vincent Nys}
-@defmodule[unstable-positional-tree-utils]
+@defmodule[positional-tree-utils]
 @section{API}
-@include-extracted[unstable-positional-tree-utils]
+@include-extracted[positional-tree-utils]

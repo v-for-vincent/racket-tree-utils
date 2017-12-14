@@ -28,7 +28,7 @@
          racket/generator
          scribble/srcdoc
          (for-doc scribble/manual)
-         unstable-list-utils)
+         list-utils)
 
 (module+ test
   ;; tree boilerplate: trees of literals only require parentheses
