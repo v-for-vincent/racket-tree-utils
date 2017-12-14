@@ -1,6 +1,6 @@
 ; MIT License
 ; 
-; Copyright (c) 2016 Vincent Nys
+; Copyright (c) 2016-2017 Vincent Nys
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 ; This is because a Void return type allows things like underlined terminal output.
 
 #lang racket
-(require "tree.rkt")
+(require unstable-positional-tree-utils)
 
 (define (list-init lst)
   (take lst (- (length lst) 1)))
@@ -54,5 +54,39 @@
              (map (λ (c) (begin (display-padding margin out) (tree-display-aux (next-margin margin #f) c node-display out))) (list-init (node-children the-tree)))
              (display-padding margin out)
              (tree-display-aux (next-margin margin #t) (last (node-children the-tree)) node-display out))))
+
+(module+ test
+  (require rackunit)
+  (define tree-drawing
+    (substring
+     "
+a
+|
++-b
+| |
+| `-e
+|
++-c
+| |
+| +-f
+| |
+| `-g
+|
+`-d
+" 1))
+
+  (define (node-display tree out)
+    (display (node-label tree) out))
+
+  (let* ([g-tree (node "g" '())]
+         [f-tree (node "f" '())]
+         [e-tree (node "e" '())]
+         [d-tree (node "d" '())]
+         [c-tree (node "c" (list f-tree g-tree))]
+         [b-tree (node "b" (list e-tree))]
+         [a-tree (node "a" (list b-tree c-tree d-tree))]
+         [string-port (open-output-string)]
+         [actual (begin (tree-display a-tree node-display string-port) (get-output-string string-port))])
+    (check-equal? actual tree-drawing)))
 
 (provide tree-display)

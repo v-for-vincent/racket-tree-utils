@@ -1,6 +1,6 @@
 ; MIT License
 ; 
-; Copyright (c) 2016 Vincent Nys
+; Copyright (c) 2016-2017 Vincent Nys
 ; 
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,23 @@
 
 #lang at-exp racket
 
-(require racket-list-utils/utils)
-(require racket/contract/parametric)
-(require racket/serialize)
-(require racket/struct) ; for constructor style printer
-(require racket/generator)
-(provide (struct-out node))
+(require racket/contract/parametric
+         racket/serialize
+         racket/struct
+         racket/generator
+         scribble/srcdoc
+         (for-doc scribble/manual)
+         unstable-list-utils)
 
-(require scribble/srcdoc)
-(require (for-doc scribble/manual))
+(module+ test
+  ;; tree boilerplate: trees of literals only require parentheses
+  (define-syntax (tree-bp stx)
+    (syntax-case stx ()
+      [(_ (LABEL SUBTREE ...))
+       #'(node LABEL (list (tree-bp SUBTREE) ...))])))
 
 (serializable-struct
  node (label children)
- #:transparent
  #:methods
  gen:equal+hash
  [(define (equal-proc a b equal?-recur)
@@ -54,6 +58,31 @@
     (make-constructor-style-printer
      (λ (obj) 'node)
      (λ (obj) (list (node-label obj) (node-children obj)))))])
+(module+ test
+  (check-equal?
+   (tree-bp
+    (2
+     (3)
+     (4)))
+   (tree-bp
+    (2
+     (3)
+     (4))))
+  (check-not-equal?
+   (tree-bp
+    (1
+     (3)
+     (4)))
+   (tree-bp
+    (2
+     (5)
+     (6)))))
+(provide
+ (struct*-doc
+  node
+  ([label any/c]
+   [children (listof node?)])
+  @{A simple positional tree, i.e. one in which a node can have any number of children, where the children are ordered with respect to one another.}))
 
 (define (subtree-filter tree predicate)
   (define children (node-children tree))
@@ -69,11 +98,75 @@
 
 (define (replace-first-subtree top replacee replacement)
   (car ((λ (t r1 r2) (replace-some-subtree-aux map-accumulatel t r1 r2)) top replacee replacement)))
-(provide (contract-out [replace-first-subtree (parametric->/c [T] (-> node? node? node? node?))]))
+(module+ test
+  (check-equal?
+   (replace-first-subtree
+    (tree-bp
+     (1
+      (2
+       (3)
+       (4))
+      (2
+       (3)
+       (4))))
+    (tree-bp
+     (2
+      (3)
+      (4)))
+    (tree-bp
+     (5
+      (6)
+      (7))))
+   (tree-bp
+    (1
+     (5
+      (6)
+      (7))
+     (2
+      (3)
+      (4))))))
+(provide
+ (proc-doc/names
+  replace-first-subtree
+  (-> node? node? node? node?)
+  (top replacee replacement)
+  @{Replaces the first subtree equal to @racket[replacee] with @racket[replacement] in @racket[top].}))
 
 (define (replace-last-subtree top replacee replacement)
   (car ((λ (t r1 r2) (replace-some-subtree-aux map-accumulater t r1 r2)) top replacee replacement)))
-(provide replace-last-subtree)
+(module+ test
+  (check-equal?
+   (replace-last-subtree
+    (tree-bp
+     (1
+      (2
+       (3)
+       (4))
+      (2
+       (3)
+       (4))))
+    (tree-bp
+     (2
+      (3)
+      (4)))
+    (tree-bp
+     (5
+      (6)
+      (7))))
+   (tree-bp
+    (1
+     (2
+      (3)
+      (4))
+     (5
+      (6)
+      (7))))))
+(provide
+ (proc-doc/names
+  replace-last-subtree
+  (-> node? node? node? node?)
+  (top replacee replacement)
+  @{Replaces the last subtree equal to @racket[replacee] with @racket[replacement] in @racket[top].}))
 
 (define (replace-some-subtree-aux map-accumulate top replacee replacement)
   (if (equal? top replacee)
@@ -102,6 +195,41 @@
          (list)
          (apply append (map (λ (c) (level-aux c depth (+ acc 1))) ch))))]))
   (level-aux tree depth 0))
+(module+ test
+  (check-equal?
+   (horizontal-level
+    (tree-bp
+     (8
+      (7)
+      (5)))
+    0
+    #t)
+   (list
+    (tree-bp
+     (8
+      (7)
+      (5)))))
+  (check-equal?
+   (horizontal-level
+    (tree-bp
+     (8
+      (7
+       (3)
+       (2))
+      (5
+       (9)
+       (1))))
+    1
+    #t)
+   (list
+    (tree-bp
+     (7
+      (3)
+      (2)))
+    (tree-bp
+     (5
+      (9)
+      (1))))))
 (provide
  (proc-doc/names
   horizontal-level
@@ -118,6 +246,36 @@
   (match n
     [(node l (list)) 0]
     [(node l ch) (+ 1 (apply max (map node-depth ch)))]))
+(module+ test
+  (check-equal?
+   (node-depth
+    (tree-bp
+     (1)))
+   0)
+  (check-equal?
+   (node-depth
+    (tree-bp
+     (1
+      (2))))
+   1)
+  (check-equal?
+   (node-depth
+    (tree-bp
+     (1
+      (2
+       (3)
+       (4))
+      (5))))
+   2)
+  (check-equal?
+   (node-depth
+    (tree-bp
+     (1
+      (2)
+      (3
+       (4)
+       (5)))))
+   2))
 (provide
  (proc-doc/names
   node-depth
@@ -194,11 +352,10 @@
   (n)
   @{Computes the total number of nodes in @racket[n].}))
 
-(define (reyield g)
-  (for ([v (in-producer g 'done)])
-    (yield v)))
-
 (define (subtrees n)
+  (define (reyield g)
+    (for ([v (in-producer g 'done)])
+      (yield v)))
   (generator
    ()
    (yield n)
