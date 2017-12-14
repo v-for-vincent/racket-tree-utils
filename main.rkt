@@ -89,12 +89,53 @@
   (if (predicate tree)
       (cons tree (append-map (λ (c) (subtree-filter c predicate)) children))
       (append-map (λ (c) (subtree-filter c predicate)) children)))
+(module+ test
+  (define (all-even? n)
+    (and
+     (even? (node-label n))
+     (andmap all-even? (node-children n))))
+  (check-equal?
+   (subtree-filter
+    (tree-bp
+     (1
+      (2
+       (3)
+       (4))
+      (6)
+      (8
+       (10)
+       (12))))
+    all-even?)
+   (list
+    (node 4 empty)
+    (node 6 empty)
+    (tree-bp
+     (8
+      (10)
+      (12)))
+    (node 10 empty)
+    (node 12 empty))))
 (provide
  (proc-doc/names
   subtree-filter
   (-> node? procedure? (listof node?))
   (tree proc)
-  @{Filters out all the subtrees of @racket[tree] to which @racket[proc] applies.}))
+  @{Filters out all the subtrees of @racket[tree] to which @racket[proc] applies, in depth-first order.}))
+
+;; auxiliary function obtained by extracting common code from replace-first-subtree and replace-last-subtree
+;; no real reason to provide this as well
+(define (replace-some-subtree-aux map-accumulate top replacee replacement)
+  (if (equal? top replacee)
+      (cons replacement #t)
+      (match-let
+          ([(cons mapping replaced?)
+            (map-accumulate (λ (child acc)
+                              (if acc
+                                  (cons child acc)
+                                  (replace-some-subtree-aux map-accumulate child replacee replacement)))
+                            #f
+                            (node-children top))])
+        (cons (node (node-label top) mapping) replaced?))))
 
 (define (replace-first-subtree top replacee replacement)
   (car ((λ (t r1 r2) (replace-some-subtree-aux map-accumulatel t r1 r2)) top replacee replacement)))
@@ -167,21 +208,6 @@
   (-> node? node? node? node?)
   (top replacee replacement)
   @{Replaces the last subtree equal to @racket[replacee] with @racket[replacement] in @racket[top].}))
-
-(define (replace-some-subtree-aux map-accumulate top replacee replacement)
-  (if (equal? top replacee)
-      (cons replacement #t)
-      (match-let
-          ([(cons mapping replaced?)
-            (map-accumulate (λ (child acc)
-                              (if acc
-                                  (cons child acc)
-                                  (replace-some-subtree-aux map-accumulate child replacee replacement)))
-                            #f
-                            (node-children top))])
-        (cons (node (node-label top) mapping) replaced?))))
-
-; TODO provide, with a contract
 
 (define (horizontal-level tree depth [with-subtrees #f])
   (define (level-aux tree depth acc)
@@ -302,26 +328,31 @@
   (n)
   @{Finds the maximum value in a tree of @racket[real?] values.}))
 
-(define (visit proc n)
+(define (for-each/tree proc n)
   (proc n)
   (for ([c (node-children n)])
-    (visit proc c)))
+    (for-each/tree proc c)))
 (module+ test
   (require rackunit)
   (let* ([out (open-output-string)]
          [proc (match-lambda
                  [(node l ch)
                   (displayln (format "~a with ~a children" l (length ch)) out)])])
-    (visit proc (node 3 (list (node 2 (list (node 1 (list)))) (node 0 (list)))))
+    (for-each/tree
+     proc
+     (tree-bp (3
+               (2
+                (1))
+               (0))))
     (check-equal?
      (get-output-string out)
      "3 with 2 children\n2 with 1 children\n1 with 0 children\n0 with 0 children\n")))
 (provide
  (proc-doc/names
-  visit
+  for-each/tree
   (-> (-> node? void?) node? void?)
   (proc n)
-  @{Applies @racket[proc] to @racket[n] and to each of its descendants.}))
+  @{Similar to @racket[node-map/df], but @racket[proc] is only called for its effect, and its result is ignored.}))
 
 (define (size n)
   (match n
@@ -335,15 +366,12 @@
    1)
   (check-equal?
    (size
-    (node
-     'hello
-     (list
-      (node 'world (list))
-      (node
-       'this
-       (list
-        (node 'is (list))))
-      (node 'vincent (list)))))
+    (tree-bp
+     (1
+      (2
+       (3)
+       (4))
+      (6))))
    5))
 (provide
  (proc-doc/names
@@ -362,4 +390,31 @@
    (for ([ch (node-children n)])
      (reyield (subtrees ch)))
    (yield 'done)))
-(provide subtrees)
+(module+ test
+  (check-equal?
+   (sequence->list
+    (in-producer
+     (subtrees
+      (tree-bp
+       (1
+        (2
+         (3))
+        (4))))
+     'done))
+   (list
+    (tree-bp
+     (1
+      (2
+       (3))
+      (4)))
+    (tree-bp
+     (2
+      (3)))
+    (tree-bp (3))
+    (tree-bp (4)))))
+(provide
+ (proc-doc/names
+  subtrees
+  (-> node? generator?)
+  (n)
+  @{Computes a generator for all the subtrees of @racket[n] in depth-first order, including @racket[n] itself.}))
