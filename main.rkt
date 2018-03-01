@@ -418,3 +418,25 @@
   (-> node? generator?)
   (n)
   @{Computes a generator for all the subtrees of @racket[n] in depth-first order, including @racket[n] itself.}))
+
+(define (visit proc n)
+  (proc n)
+  (for ([c (node-children n)])
+    (visit proc c)))
+(module+ test
+  (require rackunit)
+  (let* ([out (open-output-string)]
+         [proc (match-lambda
+                 [(node l ch)
+                  (displayln (format "~a with ~a children" l (length ch)) out)])])
+    (visit proc (node 3 (list (node 2 (list (node 1 (list)))) (node 0 (list)))))
+    (check-equal?
+     (get-output-string out)
+     "3 with 2 children\n2 with 1 children\n1 with 0 children\n0 with 0 children\n")))
+(provide
+ (proc-doc/names
+  visit
+  (-> (-> node? void?) node? void?)
+  (proc n)
+  @{Applies @racket[proc] to @racket[n] and to each of its descendants.}))
+
